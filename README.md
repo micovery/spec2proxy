@@ -6,7 +6,7 @@ building more complex proxies.
 
 It's possible to customize the generation logic through the use of plugins.
 For example, you can create a plugin that understands OpenAPI spec extensions, and
-customizes the generated API Proxy based on the value of the extensions.
+customizes the generated API Proxy bundle based on the value of the extensions.
 
 
 
@@ -21,7 +21,7 @@ You can pass one or more plugins to use with the `-plugins` parameter.
 
 e.g.
 ```shell
-spec2proxy -oas petstore.yaml -out ./petstore --plugins example,custom_plugin,etc
+spec2proxy -oas petstore.yaml -out ./petstore -plugins example,custom_plugin,etc
 ```
 
 
@@ -64,3 +64,7 @@ go build -o spec2proxy cmd/spec2proxy/main.go
 Plugins are not dynamic libraries like those built with Go-Lang's plugin package. 
 Instead, plugins are compiled into the generator itself. This is on purpose for the sake of portability,
 and ease of development of the plugins.
+
+
+### Support
+This is not an officially supported Google product
