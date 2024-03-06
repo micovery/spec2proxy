@@ -16,6 +16,7 @@ package transformer
 
 import (
 	"fmt"
+	"github.com/gosimple/slug"
 	"github.com/micovery/spec2proxy/pkg/apigeemodel/v1"
 	"github.com/pb33f/libopenapi"
 	v3high "github.com/pb33f/libopenapi/datamodel/high/v3"
@@ -27,10 +28,14 @@ import (
 )
 
 func Transform(specModel *libopenapi.DocumentModel[v3high.Document]) (*v1.APIProxy, error) {
+	var err error
+	var targetEndpoint v1.TargetEndpoint
+	var proxyEndpoint v1.ProxyEndpoint
+
 	apiProxy := v1.APIProxy{}
 
 	now := time.Now().UnixMilli()
-	apiProxy.Name = specModel.Model.Info.Title
+	apiProxy.Name = slug.Make(specModel.Model.Info.Title)
 	apiProxy.DisplayName = specModel.Model.Info.Title
 	apiProxy.Description = specModel.Model.Info.Description
 	apiProxy.Extensions = getExtensions(specModel.Model.Extensions)
@@ -39,10 +44,14 @@ func Transform(specModel *libopenapi.DocumentModel[v3high.Document]) (*v1.APIPro
 	apiProxy.LastModified = now
 
 	//build proxy endpoint
-	proxyEndpoint := buildProxyEndpoint(specModel)
+	if proxyEndpoint, err = buildProxyEndpoint(specModel); err != nil {
+		return nil, err
+	}
 
 	//build target endpoint
-	targetEndpoint := buildTargetEndpoint(specModel)
+	if targetEndpoint, err = buildTargetEndpoint(specModel); err != nil {
+		return nil, err
+	}
 
 	//link proxy endpoint to target endpoint with route rule
 	proxyEndpoint.RouteRules = append(proxyEndpoint.RouteRules, v1.RouteRule{
@@ -58,7 +67,7 @@ func Transform(specModel *libopenapi.DocumentModel[v3high.Document]) (*v1.APIPro
 	return &apiProxy, nil
 }
 
-func buildTargetEndpoint(specModel *libopenapi.DocumentModel[v3high.Document]) v1.TargetEndpoint {
+func buildTargetEndpoint(specModel *libopenapi.DocumentModel[v3high.Document]) (v1.TargetEndpoint, error) {
 	var targetEndpoint v1.TargetEndpoint
 	targetEndpoint.Name = "default"
 	targetEndpoint.Flows = make([]v1.ConditionalFlow, 0)
@@ -83,10 +92,20 @@ func buildTargetEndpoint(specModel *libopenapi.DocumentModel[v3high.Document]) v
 		},
 		Properties: nil,
 	}
-	return targetEndpoint
+
+	var parsedUrl *url.URL
+	var err error
+	if parsedUrl, err = url.Parse(targetEndpoint.HTTPTargetConnection.URL); err != nil {
+
+	}
+	if parsedUrl.Scheme == "http" {
+		targetEndpoint.HTTPTargetConnection.SSLInfo.Enabled = false
+	}
+
+	return targetEndpoint, nil
 }
 
-func buildProxyEndpoint(specModel *libopenapi.DocumentModel[v3high.Document]) v1.ProxyEndpoint {
+func buildProxyEndpoint(specModel *libopenapi.DocumentModel[v3high.Document]) (v1.ProxyEndpoint, error) {
 	var proxyEndpoint v1.ProxyEndpoint
 
 	proxyEndpoint.BasePath = extractBasePath(specModel)
@@ -111,7 +130,7 @@ func buildProxyEndpoint(specModel *libopenapi.DocumentModel[v3high.Document]) v1
 
 	appendConditionalFlows(&proxyEndpoint, specModel.Model.Paths)
 
-	return proxyEndpoint
+	return proxyEndpoint, nil
 }
 
 func extractBaseTargetUrl(specModel *libopenapi.DocumentModel[v3high.Document]) string {

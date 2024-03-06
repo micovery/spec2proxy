@@ -44,6 +44,7 @@
     {{- with .HTTPTargetConnection }}
     {{- if .SSLInfo }}
     {{- with .SSLInfo }}
+    {{- if .Enabled }}
     <SSLInfo>
       <Enabled>{{ .Enabled }}</Enabled>
       <Enforce>{{ .Enforce }}</Enforce>
@@ -59,6 +60,7 @@
       {{- end }}
       <IgnoreValidationErrors>{{ .IgnoreValidationErrors }}</IgnoreValidationErrors>
     </SSLInfo>
+    {{- end }}
     {{- end }}
     {{- end }}
     {{- if or (not .Properties) ( eq (len .Properties) 0 ) }}
