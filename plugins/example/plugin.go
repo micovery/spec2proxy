@@ -6,7 +6,7 @@ import (
 	v3high "github.com/pb33f/libopenapi/datamodel/high/v3"
 )
 
-// Plugin Sample plugin that changes the API Proxy bundle description to all uppercase letters.
+// Plugin Sample plugin
 type Plugin struct {
 }
 

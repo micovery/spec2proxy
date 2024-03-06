@@ -47,7 +47,7 @@ func (p *Plugin) ProcessSpecModel(specModel *libopenapi.DocumentModel[v3high.Doc
 	return nil
 }
 
-// Plugin Sample plugin that changes the API Proxy bundle description to all uppercase letters.
+// Plugin Custom plugin for handling "x-visibility" OpenAPI extension
 type Plugin struct {
 }
 
