@@ -10,12 +10,6 @@ import (
 	"strings"
 )
 
-func unsetOperation(pathItem *v3high.PathItem, opKey string) {
-	elem := strings.ToTitle(opKey[0:1]) + opKey[1:]
-	field := reflect.ValueOf(pathItem).Elem().FieldByName(elem)
-	field.Set(reflect.Zero(field.Type()))
-}
-
 type Visibility struct {
 	Extent string
 }
@@ -27,6 +21,12 @@ func isInternal(node *yaml.Node) bool {
 	var visibility Visibility
 	node.Decode(&visibility)
 	return strings.EqualFold(visibility.Extent, "internal")
+}
+
+func unsetOperation(pathItem *v3high.PathItem, opKey string) {
+	elem := strings.ToTitle(opKey[0:1]) + opKey[1:]
+	field := reflect.ValueOf(pathItem).Elem().FieldByName(elem)
+	field.Set(reflect.Zero(field.Type()))
 }
 
 func (p *Plugin) ProcessSpecModel(specModel *libopenapi.DocumentModel[v3high.Document]) error {
