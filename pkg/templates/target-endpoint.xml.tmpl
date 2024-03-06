@@ -1,0 +1,94 @@
+{{- /*
+// Copyright 2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+*/ -}}
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<TargetEndpoint name="{{ .Name }}">
+  <Description>{{.Description}}</Description>
+  <FaultRules/>
+
+  <PreFlow name="PreFlow">
+    {{- with .PreFlow }}
+    {{- template "PrePostFlow" . }}
+    {{- end }}
+  </PreFlow>
+
+
+  {{ if and (.Flows) ( gt (len .Flows) 0) }}
+  <Flows>
+  {{- template "Flows" . }}
+  </Flows>
+  {{- else }}
+  <Flows/>
+  {{- end }}
+
+
+  <PostFlow name="PostFlow">
+    {{- with .PostFlow }}
+    {{- template "PrePostFlow" . }}
+    {{- end }}
+  </PostFlow>
+
+  <HTTPTargetConnection>
+    {{- with .HTTPTargetConnection }}
+    {{- if .SSLInfo }}
+    {{- with .SSLInfo }}
+    <SSLInfo>
+      <Enabled>{{ .Enabled }}</Enabled>
+      <Enforce>{{ .Enforce }}</Enforce>
+      <ClientAuthEnabled>{{ .ClientAuthEnabled }}</ClientAuthEnabled>
+      {{- if .KeyStore }}
+      <KeyStore>{{ .KeyStore }}</KeyStore>
+      {{- end }}
+      {{- if .KeyAlias }}
+      <KeyAlias>{{ .KeyAlias }}</KeyAlias>
+      {{- end }}
+      {{- if .TrustStore }}
+      <TrustStore>{{ .TrustStore }}</TrustStore>
+      {{- end }}
+      <IgnoreValidationErrors>{{ .IgnoreValidationErrors }}</IgnoreValidationErrors>
+    </SSLInfo>
+    {{- end }}
+    {{- end }}
+    {{- if or (not .Properties) ( eq (len .Properties) 0 ) }}
+    <Properties />
+    {{- else }}
+    <Properties>
+      {{- range .Properties}}
+      <Property name="{{.Name}}" >{{.Value}}</TargetEndpoint>
+      {{- end }}
+    </Properties>
+    {{- end }}
+    {{- if .URL }}
+    <URL>{{ .URL }}</URL>
+    {{- else if and ( .LoadBalancer) ( gt ( len .LoadBalancer.Servers) 0)  }}
+    <LoadBalancer>
+      {{- with .LoadBalancer }}
+      {{- range .Servers -}}
+      {{- if .IsFallback }}
+      <Server name="{{ .Name }}" >
+        <IsFallback>true</IsFallback>
+      </Server>
+      {{- else }}
+      <Server name="{{ .Name }}" />
+      {{- end -}}
+      {{ end }}
+      {{- end }}
+    </LoadBalancer>
+    {{- else }}
+    <URL>https://mocktarget.apigee.net</URL>
+    {{- end }}
+    {{- end }}
+  </HTTPTargetConnection>
+</TargetEndpoint>
