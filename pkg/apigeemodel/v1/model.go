@@ -24,11 +24,6 @@ type Extension struct {
 	Value *yaml.Node
 }
 
-type Policy struct {
-	Name    string
-	XMLText string
-}
-
 type Resource struct {
 	ResourceType string
 	ResourceFile string
@@ -102,24 +97,25 @@ type ConditionalFlow struct {
 	Name                string
 	Description         string
 	Condition           string
-	RequestSteps        []Step
-	ResponseSteps       []Step
+	Request             []Step `json:"Request "yaml:"Request"`
+	Response            []Step `json:"Response" yaml:"Response"`
 	Extensions          map[string]Extension
 	SecurityRequirement []*base.SecurityRequirement
 }
 
 type UnconditionalFlow struct {
-	Name          string
-	Description   string
-	RequestSteps  []Step
-	ResponseSteps []Step
-	Extensions    map[string]Extension
+	Name        string `json:"Name" yaml:"Name"`
+	Description string `json:"Description" yaml:"Description"`
+	Request     []Step `json:"Request" yaml:"Request"`
+	Response    []Step `json:"Response" yaml:"Response"`
+	Extensions  map[string]Extension
 }
 
 type Step struct {
-	Name       string
-	PolicyName string
-	Condition  string
+	Step struct {
+		Name      string `json:"Name" yaml:"Name"`
+		Condition string `json:"Condition" yaml:"Condition"`
+	} `json:"Step" yaml:"Step"`
 }
 
 type APIProxy struct {

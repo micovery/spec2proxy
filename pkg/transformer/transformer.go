@@ -72,15 +72,15 @@ func buildTargetEndpoint(specModel *libopenapi.DocumentModel[v3high.Document]) (
 	targetEndpoint.Name = "default"
 	targetEndpoint.Flows = make([]v1.ConditionalFlow, 0)
 	targetEndpoint.PreFlow = v1.UnconditionalFlow{
-		RequestSteps:  make([]v1.Step, 0),
-		ResponseSteps: make([]v1.Step, 0),
-		Extensions:    nil,
+		Request:    make([]v1.Step, 0),
+		Response:   make([]v1.Step, 0),
+		Extensions: nil,
 	}
 
 	targetEndpoint.PostFlow = v1.UnconditionalFlow{
-		RequestSteps:  make([]v1.Step, 0),
-		ResponseSteps: make([]v1.Step, 0),
-		Extensions:    nil,
+		Request:    make([]v1.Step, 0),
+		Response:   make([]v1.Step, 0),
+		Extensions: nil,
 	}
 
 	targetEndpoint.HTTPTargetConnection = v1.HTTPTargetConnection{
@@ -112,15 +112,15 @@ func buildProxyEndpoint(specModel *libopenapi.DocumentModel[v3high.Document]) (v
 
 	proxyEndpoint.Name = "default"
 	proxyEndpoint.PreFlow = v1.UnconditionalFlow{
-		RequestSteps:  make([]v1.Step, 0),
-		ResponseSteps: make([]v1.Step, 0),
-		Extensions:    nil,
+		Request:    make([]v1.Step, 0),
+		Response:   make([]v1.Step, 0),
+		Extensions: nil,
 	}
 
 	proxyEndpoint.PostFlow = v1.UnconditionalFlow{
-		RequestSteps:  make([]v1.Step, 0),
-		ResponseSteps: make([]v1.Step, 0),
-		Extensions:    nil,
+		Request:    make([]v1.Step, 0),
+		Response:   make([]v1.Step, 0),
+		Extensions: nil,
 	}
 
 	proxyEndpoint.RouteRules = make([]v1.RouteRule, 0)
@@ -180,8 +180,8 @@ func appendConditionalFlows(endpoint *v1.ProxyEndpoint, paths *v3high.Paths) {
 				Name:                operationInfo.OperationId,
 				Description:         operationInfo.Description,
 				Condition:           fmt.Sprintf("(proxy.pathsuffix MatchesPath \"%s\") and (request.verb = \"%s\")", pathSegment, strings.ToUpper(operationKey)),
-				RequestSteps:        make([]v1.Step, 0),
-				ResponseSteps:       make([]v1.Step, 0),
+				Request:             make([]v1.Step, 0),
+				Response:            make([]v1.Step, 0),
 				Extensions:          getExtensions(pathInfo.Extensions),
 				SecurityRequirement: operationInfo.Security,
 			}

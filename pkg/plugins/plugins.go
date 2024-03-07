@@ -51,12 +51,15 @@ func ProcessSpecModel(pluginsList string, specModel *libopenapi.DocumentModel[v3
 		return nil
 	}
 
+	var err error
 	pluginPackages := strings.Split(pluginsList, ",")
 	for _, pluginName := range pluginPackages {
 		if pluginName == "" {
 			continue
 		}
-		InvokeFunc(pluginName, "ProcessSpecModel", specModel)
+		if err = InvokeFunc(pluginName, "ProcessSpecModel", specModel); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -66,12 +69,15 @@ func ProcessProxyModel(pluginsList string, apiProxy *v1.APIProxy) error {
 		return nil
 	}
 
+	var err error
 	pluginPackages := strings.Split(pluginsList, ",")
 	for _, pluginName := range pluginPackages {
 		if pluginName == "" {
 			continue
 		}
-		InvokeFunc(pluginName, "ProcessProxyModel", apiProxy)
+		if err = InvokeFunc(pluginName, "ProcessProxyModel", apiProxy); err != nil {
+			return err
+		}
 	}
 	return nil
 }

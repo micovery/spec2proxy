@@ -19,10 +19,13 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/go-errors/errors"
+	"github.com/gosimple/slug"
 	"github.com/micovery/spec2proxy/pkg/apigeemodel/v1"
+	"github.com/micovery/spec2proxy/pkg/apigeemodel/v1/policies/flowcallout"
 	"github.com/micovery/spec2proxy/pkg/templates"
 	"os"
 	"path/filepath"
+	"reflect"
 	"text/template"
 )
 
@@ -30,6 +33,8 @@ func Generate(apiProxy *v1.APIProxy, outputDir string) error {
 	var manifestBytes []byte
 	var proxyEndpointsBytes [][]byte
 	var targetEndpointsBytes [][]byte
+	var policiesBytes map[string][]byte
+
 	var err error
 
 	if manifestBytes, err = generateManifest(apiProxy); err != nil {
@@ -41,6 +46,10 @@ func Generate(apiProxy *v1.APIProxy, outputDir string) error {
 	}
 
 	if targetEndpointsBytes, err = generateTargetEndpoints(apiProxy); err != nil {
+		return err
+	}
+
+	if policiesBytes, err = generatePolicies(apiProxy); err != nil {
 		return err
 	}
 
@@ -66,6 +75,15 @@ func Generate(apiProxy *v1.APIProxy, outputDir string) error {
 	for index, targetEndpointBytes := range targetEndpointsBytes {
 		fileName := filepath.Join(apiProxyDirPath, "targets", fmt.Sprintf("%s.xml", apiProxy.TargetEndpoints[index].Name))
 		if err = os.WriteFile(fileName, targetEndpointBytes, os.ModePerm); err != nil {
+			return errors.New(err)
+		}
+	}
+
+	//generate policy files
+	for policyName := range policiesBytes {
+		policyBytes := policiesBytes[policyName]
+		fileName := filepath.Join(apiProxyDirPath, "policies", fmt.Sprintf("%s.xml", slug.Make(policyName)))
+		if err = os.WriteFile(fileName, policyBytes, os.ModePerm); err != nil {
 			return errors.New(err)
 		}
 	}
@@ -100,6 +118,31 @@ func generateDirectoryStructure(err error, outputDir string) (string, error) {
 	return apiProxyDirPath, nil
 }
 
+var TemplatesByType map[string]string
+
+func InitTemplatesMap() error {
+	TemplatesByType = make(map[string]string)
+	TemplatesByType[reflect.TypeOf(&flowcallout.FlowCallout{}).String()] = "flowcallout.xml.tmpl"
+	return nil
+}
+
+func generatePolicies(apiProxy *v1.APIProxy) (map[string][]byte, error) {
+	policiesBytes := make(map[string][]byte)
+	for _, policy := range apiProxy.Policies {
+		typeName := reflect.TypeOf(policy.Policy).String()
+		templatePath := TemplatesByType[typeName]
+
+		policyBytes, err := generateTextFromTemplate(policy.Policy, templatePath)
+		if err != nil {
+			return nil, err
+		}
+
+		policiesBytes[policy.Name()] = policyBytes
+	}
+
+	return policiesBytes, nil
+}
+
 func generateTargetEndpoints(apiProxy *v1.APIProxy) ([][]byte, error) {
 	var targetEndpointsBytes [][]byte
 	for _, targetEndpoint := range apiProxy.TargetEndpoints {
@@ -129,12 +172,12 @@ func generateProxyEndpoints(apiProxy *v1.APIProxy) ([][]byte, error) {
 func generateTextFromTemplate(source interface{}, templateFile string) ([]byte, error) {
 	var err error
 	var endpointBytes bytes.Buffer
-	var endpointTmpl *template.Template
-	if endpointTmpl, err = getEmbeddedTemplate(templateFile); err != nil {
+	var tmpl *template.Template
+	if tmpl, err = getEmbeddedTemplate(templateFile); err != nil {
 		return nil, err
 	}
 
-	if err = endpointTmpl.Execute(&endpointBytes, source); err != nil {
+	if err = tmpl.Execute(&endpointBytes, source); err != nil {
 		return nil, errors.New(err)
 	}
 
@@ -156,4 +199,8 @@ func getEmbeddedTemplate(templatePath string) (*template.Template, error) {
 	}
 
 	return outputTemplate, nil
+}
+
+func init() {
+	InitTemplatesMap()
 }

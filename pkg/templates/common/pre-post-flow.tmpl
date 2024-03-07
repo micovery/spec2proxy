@@ -20,24 +20,24 @@
     {{- else -}}
     <Description />
     {{- end }}
-    {{ if and (.RequestSteps) ( gt (len .RequestSteps) 0) -}}
+    {{ if and (.Request) ( gt (len .Request) 0) -}}
     <Request>
-    {{- range .RequestSteps }}
+    {{- range .Request }}
       <Step>
-        <Name>{{ .Name }}</Name>
-        <Condition>{{ .Condition }}</Condition>
+        <Name>{{ .Step.Name }}</Name>
+        <Condition>{{ .Step.Condition }}</Condition>
       </Step>
     {{- end }}
     </Request>
     {{- else -}}
     <Request />
     {{- end }}
-    {{ if and (.ResponseSteps) ( gt (len .ResponseSteps) 0) -}}
+    {{ if and (.Response) ( gt (len .Response) 0) -}}
     <Response>
-    {{- range .ResponseSteps }}
+    {{- range .Response }}
       <Step>
-        <Name>{{ .Name }}</Name>
-        <Condition>{{ .Condition }}</Condition>
+        <Name>{{ .Step.Name }}</Name>
+        <Condition>{{ .Step.Condition }}</Condition>
       </Step>
     {{- end }}
     </Response>

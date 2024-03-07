@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+{{- with .FlowCallout }}
+<FlowCallout async="false" continueOnError="{{ .ContinueOnError }}" enabled="{{ .Enabled }}" name="{{ .Name }}">
+  <DisplayName>{{ .DisplayName }}</DisplayName>
+  {{- if .Parameters }}
+  <Parameters>
+  {{- range .Parameters }}
+    {{- if .Parameter.Ref }}
+    <Parameter name="{{ .Parameter.Name }}">{{ "{" }}{{ .Parameter.Ref }}{{ "}" }}</Parameter>
+    {{- else }}
+    <Parameter name="{{ .Parameter.Name }}">{{ .Parameter.Value }}</Parameter>
+    {{- end }}
+  {{- end }}
+  </Parameters>
+  {{- else }}
+  <Parameters />
+  {{- end }}
+  <SharedFlowBundle>{{ .SharedFlowBundle }}</SharedFlowBundle>
+</FlowCallout>
+{{- end }}
