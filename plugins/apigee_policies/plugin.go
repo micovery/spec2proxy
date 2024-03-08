@@ -15,6 +15,7 @@
 package apigee_policies
 
 import (
+	"encoding/xml"
 	"github.com/go-errors/errors"
 	v1 "github.com/micovery/spec2proxy/pkg/apigeemodel/v1"
 	"github.com/pb33f/libopenapi"
@@ -95,24 +96,22 @@ func ResolveReferences(specModel *libopenapi.DocumentModel[v3high.Document]) {
 	if resolvingErrors != nil {
 		panic(resolvingErrors)
 	}
-
-	//rootNode := rawExtension.Value
-	//specIndex := index.NewSpecIndexWithConfig(rootNode, &index.SpecIndexConfig{
-	//	BasePath:        ".",
-	//	AllowFileLookup: true,
-	//})
-	//resolver := index.NewResolver(specIndex)
-	//resolver.Resolve()
-	//rolodex := index.NewRolodex(&index.SpecIndexConfig{
-	//	BasePath:        ".",
-	//	AllowFileLookup: true,
-	//})
-	//rolodex.SetRootNode(rootNode)
-	//rolodex.IndexTheRolodex()
-	//rolodex.Resolve()
-
-	//newRoot := rolodex.GetRootNode()
 }
+
+type Node struct {
+	XMLName xml.Name
+	Attrs   []xml.Attr `xml:"-"`
+	Content []byte     `xml:",innerxml"`
+	Nodes   []Node     `xml:",any"`
+}
+
+func (n *Node) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	n.Attrs = start.Attr
+	type node Node
+
+	return d.DecodeElement((*node)(n), &start)
+}
+
 func (p *Plugin) ProcessProxyModel(apiProxy *v1.APIProxy) error {
 
 	var err error

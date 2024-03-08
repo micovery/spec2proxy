@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"github.com/go-errors/errors"
 	"github.com/micovery/spec2proxy/pkg/apigeemodel/v1"
-	"github.com/micovery/spec2proxy/pkg/apigeemodel/v1/policies/flowcallout"
 	"github.com/micovery/spec2proxy/pkg/templates"
+	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
-	"reflect"
+	"strings"
 	"text/template"
 )
 
@@ -121,17 +121,14 @@ var TemplatesByType map[string]string
 
 func InitTemplatesMap() error {
 	TemplatesByType = make(map[string]string)
-	TemplatesByType[reflect.TypeOf(&flowcallout.FlowCallout{}).String()] = "flowcallout.xml.tmpl"
 	return nil
 }
 
 func generatePolicies(apiProxy *v1.APIProxy) (map[string][]byte, error) {
 	policiesBytes := make(map[string][]byte)
 	for _, policy := range apiProxy.Policies {
-		typeName := reflect.TypeOf(policy.Policy).String()
-		templatePath := TemplatesByType[typeName]
 
-		policyBytes, err := generateTextFromTemplate(policy.Policy, templatePath)
+		policyBytes, err := ToXML(policy.Data)
 		if err != nil {
 			return nil, err
 		}
@@ -198,6 +195,94 @@ func getEmbeddedTemplate(templatePath string) (*template.Template, error) {
 	}
 
 	return outputTemplate, nil
+}
+
+func XMLGen(node *yaml.Node, buffer *bytes.Buffer, parent string, depth int) (bool, error) {
+	if node == nil {
+		return false, nil
+	}
+
+	if parent != "" {
+		depth += 1
+	}
+
+	if node.Kind == yaml.DocumentNode {
+		fmt.Fprintf(buffer, "%s", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`)
+		if len(node.Content) == 0 {
+			return false, nil
+		}
+		return XMLGen(node.Content[0], buffer, "", depth)
+	} else if node.Kind == yaml.ScalarNode {
+
+		if parent != "" {
+			fmt.Fprintf(buffer, "\n%*s<%s>", depth*2, "", parent)
+		}
+		fmt.Fprintf(buffer, "%s", node.Value)
+		if parent != "" {
+			fmt.Fprintf(buffer, "</%s>", parent)
+		}
+		return parent != "", nil
+	} else if node.Kind == yaml.SequenceNode {
+		hasChildren := false
+		if parent != "" {
+			fmt.Fprintf(buffer, "\n%*s<%s>", depth*2, "", parent)
+		}
+		for i := 0; i < len(node.Content); i += 1 {
+			hasChildren, _ = XMLGen(node.Content[i], buffer, "", depth)
+		}
+		if parent != "" {
+			fmt.Fprintf(buffer, "\n%*s</%s>", depth*2, "", parent)
+		}
+		return hasChildren || parent != "", nil
+	} else if node.Kind == yaml.MappingNode {
+		if parent != "" {
+			fmt.Fprintf(buffer, "\n%*s<%s ", depth*2, "", parent)
+			for i := 0; i+1 < len(node.Content); i += 2 {
+				if len(node.Content[i].Value) > 1 && node.Content[i].Value[0] == '.' && node.Content[i].Value[1] != '@' &&
+					node.Content[i+1].Kind == yaml.ScalarNode {
+					fmt.Fprintf(buffer, "%s=\"%s\" ", node.Content[i].Value[1:], node.Content[i+1].Value)
+				}
+			}
+			fmt.Fprintf(buffer, ">")
+		}
+
+		lenBefore := buffer.Len()
+		anyHasChildren := false
+		hasChildren := false
+		for i := 0; i+1 < len(node.Content); i += 2 {
+			if len(node.Content[i].Value) > 1 && node.Content[i].Value[0] == '.' && node.Content[i].Value[1] != '@' {
+				continue
+			} else if strings.Index(node.Content[i].Value, ".@") == 0 {
+				hasChildren, _ = XMLGen(node.Content[i+1], buffer, "", depth)
+				anyHasChildren = hasChildren || anyHasChildren
+			} else {
+				hasChildren, _ = XMLGen(node.Content[i+1], buffer, node.Content[i].Value, depth)
+				anyHasChildren = hasChildren || anyHasChildren
+			}
+
+		}
+		lenAfter := buffer.Len()
+
+		if parent != "" {
+			if anyHasChildren == true && lenBefore != lenAfter {
+				fmt.Fprintf(buffer, "\n%*s", depth*2, "")
+			}
+			fmt.Fprintf(buffer, "</%s>", parent)
+		}
+
+		return anyHasChildren, nil
+	}
+
+	return false, fmt.Errorf("unknown yaml node kind %v", node.Kind)
+}
+
+func ToXML(node *yaml.Node) ([]byte, error) {
+	var buffer bytes.Buffer
+	if _, err := XMLGen(node, &buffer, "", -1); err != nil {
+		return nil, err
+	}
+
+	return buffer.Bytes(), nil
 }
 
 func init() {
