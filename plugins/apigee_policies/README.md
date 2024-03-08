@@ -192,14 +192,14 @@ See the examples below
       ```
   * *Example 7*: XML sequence without parent 
     * ```xml
-      <Example>
+      <Root>
         <Child name="foo" />
         <Child name="bar" />
-      </Example>
+      </Root>
       ```
       is equivalent to
       ```yaml
-      Example:
+      Root:
         .@:
           - Child:
             .name: foo
