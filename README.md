@@ -58,6 +58,12 @@ go build -o spec2proxy cmd/spec2proxy/main.go
 ```
 
 
+### Available plugins
+
+ The following plugins are available to be used out of the box
+ * [apigee_policies](/plugins/apigee_policies) - Supports adding and using Apigee policies
+ * [custom_plugin](/plugins/custom_plugin) - Shows how to traverse and manipulate the data models
+ * [example](/plugins/example) - Serves as template for creating new plugins
 
 ### What about Go-Lang Plugin package ...
 
