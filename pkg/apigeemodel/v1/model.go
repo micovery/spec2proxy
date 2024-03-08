@@ -33,7 +33,7 @@ type ProxyEndpoint struct {
 	Name                string
 	BasePath            string
 	PreFlow             UnconditionalFlow
-	Flows               []ConditionalFlow
+	Flows               []*ConditionalFlow
 	PostFlow            UnconditionalFlow
 	RouteRules          []RouteRule
 	HTTPProxyConnection HTTPProxyConnection
@@ -87,7 +87,7 @@ type TargetEndpoint struct {
 	Name                 string
 	Description          string
 	PreFlow              UnconditionalFlow
-	Flows                []ConditionalFlow
+	Flows                []*ConditionalFlow
 	PostFlow             UnconditionalFlow
 	HTTPTargetConnection HTTPTargetConnection
 	Extensions           map[string]Extension

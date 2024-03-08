@@ -70,7 +70,7 @@ func Transform(specModel *libopenapi.DocumentModel[v3high.Document]) (*v1.APIPro
 func buildTargetEndpoint(specModel *libopenapi.DocumentModel[v3high.Document]) (v1.TargetEndpoint, error) {
 	var targetEndpoint v1.TargetEndpoint
 	targetEndpoint.Name = "default"
-	targetEndpoint.Flows = make([]v1.ConditionalFlow, 0)
+	targetEndpoint.Flows = make([]*v1.ConditionalFlow, 0)
 	targetEndpoint.PreFlow = v1.UnconditionalFlow{
 		Request:    make([]v1.Step, 0),
 		Response:   make([]v1.Step, 0),
@@ -165,7 +165,7 @@ func extractBasePath(specModel *libopenapi.DocumentModel[v3high.Document]) strin
 }
 
 func appendConditionalFlows(endpoint *v1.ProxyEndpoint, paths *v3high.Paths) {
-	endpoint.Flows = make([]v1.ConditionalFlow, 0)
+	endpoint.Flows = make([]*v1.ConditionalFlow, 0)
 
 	for path := paths.PathItems.First(); path != nil; path = path.Next() {
 		pathSegment := path.Key()
@@ -176,7 +176,7 @@ func appendConditionalFlows(endpoint *v1.ProxyEndpoint, paths *v3high.Paths) {
 			operationKey := operation.Key()
 			operationInfo := operation.Value()
 
-			conditionalFlow := v1.ConditionalFlow{
+			conditionalFlow := &v1.ConditionalFlow{
 				Name:                operationInfo.OperationId,
 				Description:         operationInfo.Description,
 				Condition:           fmt.Sprintf("(proxy.pathsuffix MatchesPath \"%s\") and (request.verb = \"%s\")", pathSegment, strings.ToUpper(operationKey)),

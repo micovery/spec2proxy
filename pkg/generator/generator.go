@@ -19,7 +19,6 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/go-errors/errors"
-	"github.com/gosimple/slug"
 	"github.com/micovery/spec2proxy/pkg/apigeemodel/v1"
 	"github.com/micovery/spec2proxy/pkg/apigeemodel/v1/policies/flowcallout"
 	"github.com/micovery/spec2proxy/pkg/templates"
@@ -82,7 +81,7 @@ func Generate(apiProxy *v1.APIProxy, outputDir string) error {
 	//generate policy files
 	for policyName := range policiesBytes {
 		policyBytes := policiesBytes[policyName]
-		fileName := filepath.Join(apiProxyDirPath, "policies", fmt.Sprintf("%s.xml", slug.Make(policyName)))
+		fileName := filepath.Join(apiProxyDirPath, "policies", fmt.Sprintf("%s.xml", policyName))
 		if err = os.WriteFile(fileName, policyBytes, os.ModePerm); err != nil {
 			return errors.New(err)
 		}

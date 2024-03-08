@@ -8,7 +8,7 @@ import (
 )
 
 func RequireParamAndExit(param string) {
-	fmt.Fprintf(os.Stderr, "error: --%s parameter is requried\n", param)
+	fmt.Fprintf(os.Stderr, "error: --%s parameter is required\n", param)
 	fmt.Println("Usage:")
 	flag.PrintDefaults()
 	os.Exit(1)

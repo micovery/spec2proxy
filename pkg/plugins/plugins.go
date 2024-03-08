@@ -42,8 +42,11 @@ func InvokeFunc(pluginName string, funcName string, args ...any) error {
 		in = append(in, reflect.ValueOf(arg))
 	}
 
-	funcRef.Call(in)
-	return nil
+	results := funcRef.Call(in)
+	if results[0].IsZero() {
+		return nil
+	}
+	return results[0].Interface().(error)
 }
 
 func ProcessSpecModel(pluginsList string, specModel *libopenapi.DocumentModel[v3high.Document]) error {

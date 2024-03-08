@@ -1,7 +1,10 @@
 # Apigee Policies Plugin
 
-This plugin uses custom OpenAPI extensions within to define and insert 
+This plugin uses custom OpenAPI extensions within the spec to define and insert 
 Apigee policy steps into the generated API proxy bundle.
+
+It's also possible to move the extensions to separate files outside the main Open API Spec.
+This is useful in cases where you need to share configuration across multiple API Proxies.
 
 
 ## How to create an Apigee policy
@@ -82,6 +85,23 @@ x-Apigee-PostClientFlow:
         Condition: true
         Policy: FC-Callout
 
+```
+
+## Defining extensions in separate files
+
+Each extension can be defined in-line with the OpenAPI spec, or within a separate file.
+
+e.g.
+
+```yaml
+x-Apigee-Policies: 
+  $ref: "./apigee-config.yaml#/Policies"
+
+x-Apigee-PreFlow:
+  $ref: "./apigee-config.yaml#/PreFlow"
+
+x-Apigee-PostFlow:
+  $ref: "./apigee-config.yaml#/PostFlow"
 ```
 
 

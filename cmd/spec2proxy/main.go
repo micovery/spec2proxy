@@ -29,7 +29,7 @@ func main() {
 	flag.Parse()
 
 	if specFile == "" {
-		utils.RequireParamAndExit("spec")
+		utils.RequireParamAndExit("oas")
 	}
 
 	if outputDir == "" {

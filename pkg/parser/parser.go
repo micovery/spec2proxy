@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/go-errors/errors"
 	"github.com/pb33f/libopenapi"
+	"github.com/pb33f/libopenapi/datamodel"
 	v3high "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"os"
 )
@@ -29,8 +30,13 @@ func Parse(specFile string) (*libopenapi.DocumentModel[v3high.Document], []error
 		return nil, []error{errors.New(err)}
 	}
 
+	config := datamodel.DocumentConfiguration{
+		BasePath:            ".",
+		AllowFileReferences: true,
+	}
+
 	var specDoc libopenapi.Document
-	if specDoc, err = libopenapi.NewDocument(specBytes); err != nil {
+	if specDoc, err = libopenapi.NewDocumentWithConfiguration(specBytes, &config); err != nil {
 		return nil, []error{errors.New(err)}
 	}
 
