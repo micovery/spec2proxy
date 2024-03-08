@@ -89,7 +89,7 @@ x-Apigee-PostClientFlow:
 
 ## Defining extensions in separate files
 
-Each extension can be defined in-line with the OpenAPI spec, or within a separate file.
+Each extension can be defined in-line within the OpenAPI spec, or within a separate file.
 
 e.g.
 
