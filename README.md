@@ -39,10 +39,10 @@ apigee_bundle = Generate(apigee_model)
 
 ### How plugins work
 
-Plugins are hooks into the processing pipeline of the tool. Each plugin has two hooks *ProcessSpecModel* and *ProcessProxyModel*
+Each plugin has two hooks *ProcessSpecModel* and *ProcessProxyModel*
 
-* *ProcessSpecModel* - This function runs after the input spec text has been *parsed* into the [libopenapi](https://github.com/pb33f/libopenapi) data model.
-* *ProcessProxyModel* - This function runs after the spec has been *transformed* into the Apigee data model.
+* *ProcessSpecModel* - Invoked after the input spec text has been *parsed* into the [libopenapi](https://github.com/pb33f/libopenapi) data model.
+* *ProcessProxyModel* - Invoked after the spec has been *transformed* into the Apigee data model.
 
 ### How to add plugins
 
