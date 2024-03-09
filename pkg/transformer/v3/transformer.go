@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package transformer
+package v3
 
 import (
 	"fmt"
 	"github.com/gosimple/slug"
-	"github.com/micovery/spec2proxy/pkg/apigeemodel/v1"
+	"github.com/micovery/spec2proxy/pkg/apigee/v1"
+	"github.com/micovery/spec2proxy/pkg/transformer"
 	"github.com/pb33f/libopenapi"
 	v3high "github.com/pb33f/libopenapi/datamodel/high/v3"
-	"github.com/pb33f/libopenapi/orderedmap"
-	"gopkg.in/yaml.v3"
 	"net/url"
 	"strings"
 	"time"
@@ -29,8 +28,8 @@ import (
 
 func Transform(specModel *libopenapi.DocumentModel[v3high.Document]) (*v1.APIProxy, error) {
 	var err error
-	var targetEndpoint v1.TargetEndpoint
-	var proxyEndpoint v1.ProxyEndpoint
+	var targetEndpoint *v1.TargetEndpoint
+	var proxyEndpoint *v1.ProxyEndpoint
 
 	apiProxy := v1.APIProxy{}
 
@@ -38,8 +37,8 @@ func Transform(specModel *libopenapi.DocumentModel[v3high.Document]) (*v1.APIPro
 	apiProxy.Name = slug.Make(specModel.Model.Info.Title)
 	apiProxy.DisplayName = specModel.Model.Info.Title
 	apiProxy.Description = specModel.Model.Info.Description
-	apiProxy.Extensions = getExtensions(specModel.Model.Extensions)
-	appendExtensions(apiProxy.Extensions, specModel.Model.Info.Extensions)
+	apiProxy.Extensions = transformer.GetExtensions(specModel.Model.Extensions)
+	transformer.AppendExtensions(apiProxy.Extensions, specModel.Model.Info.Extensions)
 	apiProxy.CreatedAt = now
 	apiProxy.LastModified = now
 
@@ -54,37 +53,29 @@ func Transform(specModel *libopenapi.DocumentModel[v3high.Document]) (*v1.APIPro
 	}
 
 	//link proxy endpoint to target endpoint with route rule
-	proxyEndpoint.RouteRules = append(proxyEndpoint.RouteRules, v1.RouteRule{
-		Name:           "default",
-		TargetEndpoint: targetEndpoint.Name,
-		Condition:      "true",
-	})
-
-	apiProxy.ProxyEndpoints = append(apiProxy.ProxyEndpoints, proxyEndpoint)
-	apiProxy.TargetEndpoints = append(apiProxy.TargetEndpoints, targetEndpoint)
-	apiProxy.Resources = make([]v1.Resource, 0)
+	transformer.SetupRouteRules(&apiProxy, proxyEndpoint, targetEndpoint)
 
 	return &apiProxy, nil
 }
 
-func buildTargetEndpoint(specModel *libopenapi.DocumentModel[v3high.Document]) (v1.TargetEndpoint, error) {
+func buildTargetEndpoint(specModel *libopenapi.DocumentModel[v3high.Document]) (*v1.TargetEndpoint, error) {
 	var targetEndpoint v1.TargetEndpoint
 	targetEndpoint.Name = "default"
-	targetEndpoint.Flows = make([]*v1.ConditionalFlow, 0)
-	targetEndpoint.PreFlow = v1.UnconditionalFlow{
-		Request:    make([]v1.Step, 0),
-		Response:   make([]v1.Step, 0),
+	targetEndpoint.Flows = []*v1.ConditionalFlow{}
+	targetEndpoint.PreFlow = &v1.UnconditionalFlow{
+		Request:    []*v1.Step{},
+		Response:   []*v1.Step{},
 		Extensions: nil,
 	}
 
-	targetEndpoint.PostFlow = v1.UnconditionalFlow{
-		Request:    make([]v1.Step, 0),
-		Response:   make([]v1.Step, 0),
+	targetEndpoint.PostFlow = &v1.UnconditionalFlow{
+		Request:    []*v1.Step{},
+		Response:   []*v1.Step{},
 		Extensions: nil,
 	}
 
-	targetEndpoint.HTTPTargetConnection = v1.HTTPTargetConnection{
-		URL: extractBaseTargetUrl(specModel),
+	targetEndpoint.HTTPTargetConnection = &v1.HTTPTargetConnection{
+		URL: extractTargetEndpointUrl(specModel),
 		SSLInfo: v1.SSLInfo{
 			Enabled:                true,
 			Enforce:                false,
@@ -96,44 +87,44 @@ func buildTargetEndpoint(specModel *libopenapi.DocumentModel[v3high.Document]) (
 	var parsedUrl *url.URL
 	var err error
 	if parsedUrl, err = url.Parse(targetEndpoint.HTTPTargetConnection.URL); err != nil {
-
+		return nil, err
 	}
 	if parsedUrl.Scheme == "http" {
 		targetEndpoint.HTTPTargetConnection.SSLInfo.Enabled = false
 	}
 
-	return targetEndpoint, nil
+	return &targetEndpoint, nil
 }
 
-func buildProxyEndpoint(specModel *libopenapi.DocumentModel[v3high.Document]) (v1.ProxyEndpoint, error) {
+func buildProxyEndpoint(specModel *libopenapi.DocumentModel[v3high.Document]) (*v1.ProxyEndpoint, error) {
 	var proxyEndpoint v1.ProxyEndpoint
 
 	proxyEndpoint.BasePath = extractBasePath(specModel)
 
 	proxyEndpoint.Name = "default"
-	proxyEndpoint.PreFlow = v1.UnconditionalFlow{
-		Request:    make([]v1.Step, 0),
-		Response:   make([]v1.Step, 0),
+	proxyEndpoint.PreFlow = &v1.UnconditionalFlow{
+		Request:    []*v1.Step{},
+		Response:   []*v1.Step{},
 		Extensions: nil,
 	}
 
-	proxyEndpoint.PostFlow = v1.UnconditionalFlow{
-		Request:    make([]v1.Step, 0),
-		Response:   make([]v1.Step, 0),
+	proxyEndpoint.PostFlow = &v1.UnconditionalFlow{
+		Request:    []*v1.Step{},
+		Response:   []*v1.Step{},
 		Extensions: nil,
 	}
 
-	proxyEndpoint.RouteRules = make([]v1.RouteRule, 0)
+	proxyEndpoint.RouteRules = []*v1.RouteRule{}
 
 	proxyEndpoint.SecurityRequirement = specModel.Model.Security
-	proxyEndpoint.Extensions = getExtensions(specModel.Model.Paths.Extensions)
+	proxyEndpoint.Extensions = transformer.GetExtensions(specModel.Model.Paths.Extensions)
 
 	appendConditionalFlows(&proxyEndpoint, specModel.Model.Paths)
 
-	return proxyEndpoint, nil
+	return &proxyEndpoint, nil
 }
 
-func extractBaseTargetUrl(specModel *libopenapi.DocumentModel[v3high.Document]) string {
+func extractTargetEndpointUrl(specModel *libopenapi.DocumentModel[v3high.Document]) string {
 	if len(specModel.Model.Servers) == 0 {
 		return "https://mocktarget.apigee.net"
 	}
@@ -165,10 +156,10 @@ func extractBasePath(specModel *libopenapi.DocumentModel[v3high.Document]) strin
 }
 
 func appendConditionalFlows(endpoint *v1.ProxyEndpoint, paths *v3high.Paths) {
-	endpoint.Flows = make([]*v1.ConditionalFlow, 0)
+	endpoint.Flows = []*v1.ConditionalFlow{}
 
 	for path := paths.PathItems.First(); path != nil; path = path.Next() {
-		pathSegment := path.Key()
+		pathSegment := transformer.ToApigeePath(path.Key())
 		pathInfo := path.Value()
 		operations := pathInfo.GetOperations()
 
@@ -180,44 +171,14 @@ func appendConditionalFlows(endpoint *v1.ProxyEndpoint, paths *v3high.Paths) {
 				Name:                operationInfo.OperationId,
 				Description:         operationInfo.Description,
 				Condition:           fmt.Sprintf("(proxy.pathsuffix MatchesPath \"%s\") and (request.verb = \"%s\")", pathSegment, strings.ToUpper(operationKey)),
-				Request:             make([]v1.Step, 0),
-				Response:            make([]v1.Step, 0),
-				Extensions:          getExtensions(pathInfo.Extensions),
+				Request:             []*v1.Step{},
+				Response:            []*v1.Step{},
+				Extensions:          transformer.GetExtensions(pathInfo.Extensions),
 				SecurityRequirement: operationInfo.Security,
 			}
 
-			appendExtensions(conditionalFlow.Extensions, operationInfo.Extensions)
+			transformer.AppendExtensions(conditionalFlow.Extensions, operationInfo.Extensions)
 			endpoint.Flows = append(endpoint.Flows, conditionalFlow)
 		}
 	}
-}
-
-func appendExtensions(target map[string]v1.Extension, source *orderedmap.Map[string, *yaml.Node]) {
-	elem := source.First()
-	for elem != nil {
-		key := elem.Key()
-		value := elem.Value()
-		target[key] = v1.Extension{
-			Name:  key,
-			Value: value,
-		}
-		elem = elem.Next()
-	}
-}
-
-func getExtensions(source *orderedmap.Map[string, *yaml.Node]) map[string]v1.Extension {
-	result := make(map[string]v1.Extension)
-	elem := source.First()
-
-	for elem != nil {
-		key := elem.Key()
-		value := elem.Value()
-		result[key] = v1.Extension{
-			Name:  key,
-			Value: value,
-		}
-		elem = elem.Next()
-	}
-
-	return result
 }

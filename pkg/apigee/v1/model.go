@@ -32,13 +32,13 @@ type Resource struct {
 type ProxyEndpoint struct {
 	Name                string
 	BasePath            string
-	PreFlow             UnconditionalFlow
+	PreFlow             *UnconditionalFlow
 	Flows               []*ConditionalFlow
-	PostFlow            UnconditionalFlow
-	RouteRules          []RouteRule
-	HTTPProxyConnection HTTPProxyConnection
+	PostFlow            *UnconditionalFlow
+	RouteRules          []*RouteRule
+	HTTPProxyConnection *HTTPProxyConnection
 	SecurityRequirement []*base.SecurityRequirement
-	Extensions          map[string]Extension
+	Extensions          map[string]*Extension
 }
 
 type SSLInfo struct {
@@ -58,7 +58,7 @@ type Property struct {
 
 type HTTPProxyConnection struct {
 	BasePath   string
-	Properties []Property
+	Properties []*Property
 }
 
 type TargetServer struct {
@@ -68,13 +68,13 @@ type TargetServer struct {
 
 type LoadBalancer struct {
 	Algorithm string
-	Servers   []TargetServer
+	Servers   []*TargetServer
 }
 type HTTPTargetConnection struct {
 	URL          string
 	LoadBalancer LoadBalancer
 	SSLInfo      SSLInfo
-	Properties   []Property
+	Properties   []*Property
 }
 
 type RouteRule struct {
@@ -86,29 +86,29 @@ type RouteRule struct {
 type TargetEndpoint struct {
 	Name                 string
 	Description          string
-	PreFlow              UnconditionalFlow
+	PreFlow              *UnconditionalFlow
 	Flows                []*ConditionalFlow
-	PostFlow             UnconditionalFlow
-	HTTPTargetConnection HTTPTargetConnection
-	Extensions           map[string]Extension
+	PostFlow             *UnconditionalFlow
+	HTTPTargetConnection *HTTPTargetConnection
+	Extensions           map[string]*Extension
 }
 
 type ConditionalFlow struct {
 	Name                string
 	Description         string
 	Condition           string
-	Request             []Step `json:"Request "yaml:"Request"`
-	Response            []Step `json:"Response" yaml:"Response"`
-	Extensions          map[string]Extension
+	Request             []*Step `json:"Request" yaml:"Request"`
+	Response            []*Step `json:"Response" yaml:"Response"`
+	Extensions          map[string]*Extension
 	SecurityRequirement []*base.SecurityRequirement
 }
 
 type UnconditionalFlow struct {
-	Name        string `json:"Name" yaml:"Name"`
-	Description string `json:"Description" yaml:"Description"`
-	Request     []Step `json:"Request" yaml:"Request"`
-	Response    []Step `json:"Response" yaml:"Response"`
-	Extensions  map[string]Extension
+	Name        string  `json:"Name" yaml:"Name"`
+	Description string  `json:"Description" yaml:"Description"`
+	Request     []*Step `json:"Request" yaml:"Request"`
+	Response    []*Step `json:"Response" yaml:"Response"`
+	Extensions  map[string]*Extension
 }
 
 type Step struct {
@@ -124,9 +124,9 @@ type APIProxy struct {
 	DisplayName     string
 	CreatedAt       int64
 	LastModified    int64
-	Policies        []Policy
-	ProxyEndpoints  []ProxyEndpoint
-	TargetEndpoints []TargetEndpoint
-	Resources       []Resource
-	Extensions      map[string]Extension
+	Policies        []*Policy
+	ProxyEndpoints  []*ProxyEndpoint
+	TargetEndpoints []*TargetEndpoint
+	Resources       []*Resource
+	Extensions      map[string]*Extension
 }

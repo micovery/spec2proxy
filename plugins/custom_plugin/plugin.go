@@ -16,11 +16,11 @@ package custom_plugin
 
 import (
 	"fmt"
-	v1 "github.com/micovery/spec2proxy/pkg/apigeemodel/v1"
+	v1 "github.com/micovery/spec2proxy/pkg/apigee/v1"
 	"github.com/pb33f/libopenapi"
+	v2high "github.com/pb33f/libopenapi/datamodel/high/v2"
 	v3high "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"gopkg.in/yaml.v3"
-	"reflect"
 	"strings"
 )
 
@@ -37,27 +37,11 @@ func isInternal(node *yaml.Node) bool {
 	return strings.EqualFold(visibility.Extent, "internal")
 }
 
-func unsetOperation(pathItem *v3high.PathItem, opKey string) {
-	elem := strings.ToTitle(opKey[0:1]) + opKey[1:]
-	field := reflect.ValueOf(pathItem).Elem().FieldByName(elem)
-	field.Set(reflect.Zero(field.Type()))
+func (p *Plugin) ProcessOAS3SpecModel(specModel *libopenapi.DocumentModel[v3high.Document]) error {
+	return nil
 }
 
-func (p *Plugin) ProcessSpecModel(specModel *libopenapi.DocumentModel[v3high.Document]) error {
-	for path := specModel.Model.Paths.PathItems.First(); path != nil; path = path.Next() {
-		pathKey := path.Key()
-		pathItem := path.Value()
-		operations := pathItem.GetOperations()
-		for operation := operations.First(); operation != nil; operation = operation.Next() {
-			opKey := operation.Key()
-			opItem := operation.Value()
-			if visibilityExtension, found := (opItem.Extensions.Get("x-visibility")); found && isInternal(visibilityExtension) {
-				fmt.Printf("Removing internal operation: %s %s", strings.ToUpper(opKey), pathKey)
-				unsetOperation(pathItem, opKey)
-			}
-		}
-	}
-
+func (p *Plugin) ProcessOAS2SpecModel(specModel *libopenapi.DocumentModel[v2high.Swagger]) error {
 	return nil
 }
 
@@ -66,7 +50,32 @@ type Plugin struct {
 }
 
 func (p *Plugin) ProcessProxyModel(apiProxy *v1.APIProxy) error {
-	// this is chance to modify the Apigee API Proxy model before it gets generated to a bundle on disk
+	if len(apiProxy.ProxyEndpoints) == 0 {
+		return nil
+	}
+
+	var newFlows []*v1.ConditionalFlow
+
+	for _, flow := range apiProxy.ProxyEndpoints[0].Flows {
+		if isInternalFlow(flow) {
+			fmt.Printf("Removing internal operation: %s\n", flow.Name)
+			continue
+		}
+		newFlows = append(newFlows, flow)
+	}
+
+	apiProxy.ProxyEndpoints[0].Flows = newFlows
+
+	//TODO: Add catch-all flow at the end
 
 	return nil
+}
+
+func isInternalFlow(flow *v1.ConditionalFlow) bool {
+	for _, extension := range flow.Extensions {
+		if extension.Name == "x-visibility" && isInternal(extension.Value) {
+			return true
+		}
+	}
+	return false
 }

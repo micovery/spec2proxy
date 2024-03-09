@@ -19,7 +19,7 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/go-errors/errors"
-	"github.com/micovery/spec2proxy/pkg/apigeemodel/v1"
+	"github.com/micovery/spec2proxy/pkg/apigee/v1"
 	"github.com/micovery/spec2proxy/pkg/templates"
 	"gopkg.in/yaml.v3"
 	"os"

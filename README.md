@@ -1,5 +1,6 @@
 ## spec2proxy 
-This is a command-line tool that generates an Apigee X API Proxy bundle from an OpenAPI 3 Spec.
+This is a command-line tool that generates an Apigee X API Proxy bundle from an OpenAPI spec.
+(OAS2 and OAS3 are supported)
 
 By default, the tool generates a simple API Proxy bundle that can serve as scaffolding for
 building more complex proxies.
@@ -28,14 +29,30 @@ spec2proxy -oas petstore.yaml -out ./petstore -plugins example,custom_plugin,etc
 ### How the tool works
 
 This tool works as basic processing pipeline with three steps: *Parse*, *Transform*, and *Generate*
-
-e.g.
 ```text
-libopenapi_model = Parse(openapi_text) 
-apigee_model = Transform(libopenapi_model)
-apigee_bundle = Generate(apigee_model)
 
+               SpecText        // file on disk
+                  |
+                  v
+           Parse(...)
+                  | 
+                  v  
+         libopenapi_SpecModel  // Structs in memory
+                  |            
+                  v
+       Transform(...)
+                  |
+                  v
+            apigee_ProxyModel  // Structs in memory
+                  |
+                  v   
+         Generate(...)   
+                  |
+                  V
+              ProxyBundle     // files on disk
+                  
 ```
+
 
 ### How plugins work
 

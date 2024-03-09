@@ -1,7 +1,7 @@
-*.json
-*.yaml
-*.iml
+/*.json
+/*.yaml
+/*.iml
 .idea
-apiproxy
+/apiproxy
 .DS_Store
-spec2proxy
+/spec2proxy

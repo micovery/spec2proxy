@@ -17,8 +17,9 @@ package apigee_policies
 import (
 	"encoding/xml"
 	"github.com/go-errors/errors"
-	v1 "github.com/micovery/spec2proxy/pkg/apigeemodel/v1"
+	v1 "github.com/micovery/spec2proxy/pkg/apigee/v1"
 	"github.com/pb33f/libopenapi"
+	v2high "github.com/pb33f/libopenapi/datamodel/high/v2"
 	v3high "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/index"
 	"github.com/vmware-labs/yaml-jsonpath/pkg/yamlpath"
@@ -27,7 +28,11 @@ import (
 	"strings"
 )
 
-func (p *Plugin) ProcessSpecModel(specModel *libopenapi.DocumentModel[v3high.Document]) error {
+func (p *Plugin) ProcessOAS3SpecModel(specModel *libopenapi.DocumentModel[v3high.Document]) error {
+	return nil
+}
+
+func (p *Plugin) ProcessOAS2SpecModel(specModel *libopenapi.DocumentModel[v2high.Swagger]) error {
 	return nil
 }
 
@@ -143,8 +148,8 @@ func (p *Plugin) ProcessProxyModel(apiProxy *v1.APIProxy) error {
 	return nil
 }
 
-func UnmarshalExtension(extensionName string, extensions map[string]v1.Extension, target any) error {
-	var rawExtension v1.Extension
+func UnmarshalExtension(extensionName string, extensions map[string]*v1.Extension, target any) error {
+	var rawExtension *v1.Extension
 	var ok bool
 	var err error
 

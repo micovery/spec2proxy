@@ -15,19 +15,19 @@
 package parser
 
 import (
-	"fmt"
 	"github.com/go-errors/errors"
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel"
+	v2high "github.com/pb33f/libopenapi/datamodel/high/v2"
 	v3high "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"os"
 )
 
-func Parse(specFile string) (*libopenapi.DocumentModel[v3high.Document], []error) {
+func Parse(specFile string) (libopenapi.Document, error) {
 	var specBytes []byte
 	var err error
 	if specBytes, err = os.ReadFile(specFile); err != nil {
-		return nil, []error{errors.New(err)}
+		return nil, errors.New(err)
 	}
 
 	config := datamodel.DocumentConfiguration{
@@ -37,8 +37,14 @@ func Parse(specFile string) (*libopenapi.DocumentModel[v3high.Document], []error
 
 	var specDoc libopenapi.Document
 	if specDoc, err = libopenapi.NewDocumentWithConfiguration(specBytes, &config); err != nil {
-		return nil, []error{errors.New(err)}
+		return nil, errors.New(err)
 	}
+
+	return specDoc, nil
+}
+
+func BuildOAS3Model(specDoc libopenapi.Document) (*libopenapi.DocumentModel[v3high.Document], []error) {
+	var err error
 
 	var model *libopenapi.DocumentModel[v3high.Document]
 	var errs []error
@@ -51,7 +57,27 @@ func Parse(specFile string) (*libopenapi.DocumentModel[v3high.Document], []error
 	}
 
 	if model == nil {
-		return nil, []error{errors.New(fmt.Errorf("could not parse spec file %s", specFile))}
+		return nil, []error{errors.Errorf("could not build OpenAPI 3 model from spec")}
+	}
+
+	return model, nil
+}
+
+func BuildOAS2Model(specDoc libopenapi.Document) (*libopenapi.DocumentModel[v2high.Swagger], []error) {
+	var err error
+
+	var model *libopenapi.DocumentModel[v2high.Swagger]
+	var errs []error
+	if model, errs = specDoc.BuildV2Model(); len(errs) != 0 {
+		var index int
+		for index, err = range errs {
+			errs[index] = errors.New(err)
+		}
+		return nil, errs
+	}
+
+	if model == nil {
+		return nil, []error{errors.Errorf("could not build OpenAPI 2 model from spec")}
 	}
 
 	return model, nil

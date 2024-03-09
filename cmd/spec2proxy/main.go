@@ -17,14 +17,17 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/micovery/spec2proxy/pkg/apigeemodel/v1"
+	"github.com/go-errors/errors"
+	"github.com/micovery/spec2proxy/pkg/apigee/v1"
 	"github.com/micovery/spec2proxy/pkg/generator"
 	"github.com/micovery/spec2proxy/pkg/parser"
 	"github.com/micovery/spec2proxy/pkg/plugins"
-	"github.com/micovery/spec2proxy/pkg/transformer"
+	v2 "github.com/micovery/spec2proxy/pkg/transformer/v2"
+	"github.com/micovery/spec2proxy/pkg/transformer/v3"
 	"github.com/micovery/spec2proxy/pkg/utils"
 	_ "github.com/micovery/spec2proxy/plugins"
 	"github.com/pb33f/libopenapi"
+	v2high "github.com/pb33f/libopenapi/datamodel/high/v2"
 	v3high "github.com/pb33f/libopenapi/datamodel/high/v3"
 )
 
@@ -33,8 +36,10 @@ func main() {
 	var outputDir string
 	var pluginsList string
 
+	var errs []error
 	var err error
-	var specModel *libopenapi.DocumentModel[v3high.Document]
+	var specModelV2 *libopenapi.DocumentModel[v2high.Swagger]
+	var specModelV3 *libopenapi.DocumentModel[v3high.Document]
 	var apiModel *v1.APIProxy
 
 	flag.StringVar(&specFile, "oas", "", "path to OpenAPI spec file. e.g. \"./petstore.yaml\"")
@@ -50,21 +55,46 @@ func main() {
 		utils.RequireParamAndExit("out")
 	}
 
-	var errs []error
-	if specModel, errs = parser.Parse(specFile); len(errs) != 0 {
-		for _, err = range errs {
-			fmt.Println(err)
-		}
-
-		utils.PrintErrorWithStackAndExit(errs[0])
-	}
-
-	// call plugins to process the OAS spec
-	if err = plugins.ProcessSpecModel(pluginsList, specModel); err != nil {
+	var spec libopenapi.Document
+	if spec, err = parser.Parse(specFile); err != nil {
+		fmt.Println(err)
 		utils.PrintErrorWithStackAndExit(err)
 	}
+	specVersion := spec.GetSpecInfo().VersionNumeric
 
-	if apiModel, err = transformer.Transform(specModel); err != nil {
+	if specVersion == 2.0 {
+		if specModelV2, errs = parser.BuildOAS2Model(spec); len(errs) != 0 {
+			for _, err = range errs {
+				fmt.Println(err)
+			}
+			utils.PrintErrorWithStackAndExit(errs[0])
+		}
+		// call plugins to process the OAS spec
+		if err = plugins.ProcessOAS2SpecModel(pluginsList, specModelV2); err != nil {
+			utils.PrintErrorWithStackAndExit(err)
+		}
+
+		if apiModel, err = v2.Transform(specModelV2); err != nil {
+			utils.PrintErrorWithStackAndExit(err)
+		}
+	} else if specVersion >= 3 {
+		if specModelV3, errs = parser.BuildOAS3Model(spec); len(errs) != 0 {
+			for _, err = range errs {
+				fmt.Println(err)
+			}
+			utils.PrintErrorWithStackAndExit(errs[0])
+		}
+		// call plugins to process the OAS spec
+		if err = plugins.ProcessOAS3SpecModel(pluginsList, specModelV3); err != nil {
+			utils.PrintErrorWithStackAndExit(err)
+		}
+
+		if apiModel, err = v3.Transform(specModelV3); err != nil {
+			utils.PrintErrorWithStackAndExit(err)
+		}
+	} else {
+		err = errors.Errorf("OpenAPI spec version %s is not supported", spec.GetVersion())
+		fmt.Println(err)
 		utils.PrintErrorWithStackAndExit(err)
 	}
 

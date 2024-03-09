@@ -16,15 +16,19 @@ package plugins
 
 import (
 	"github.com/go-errors/errors"
-	v1 "github.com/micovery/spec2proxy/pkg/apigeemodel/v1"
+	v1 "github.com/micovery/spec2proxy/pkg/apigee/v1"
 	"github.com/pb33f/libopenapi"
+	v2high "github.com/pb33f/libopenapi/datamodel/high/v2"
 	v3high "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"reflect"
 	"strings"
 )
 
 type Plugin interface {
-	ProcessSpecModel(specModel *libopenapi.DocumentModel[v3high.Document]) error
+	ProcessOAS3SpecModel(specModel *libopenapi.DocumentModel[v3high.Document]) error
+
+	ProcessOAS2SpecModel(specModel *libopenapi.DocumentModel[v2high.Swagger]) error
+
 	ProcessProxyModel(apiProxy *v1.APIProxy) error
 }
 
@@ -48,7 +52,7 @@ func InvokeFunc(pluginName string, funcName string, args ...any) error {
 	funcRef := reflect.ValueOf(plugin).MethodByName(funcName)
 
 	if !funcRef.IsValid() {
-		return errors.Errorf("plugin %s has no Process function", pluginName)
+		return errors.Errorf("plugin %s has no %s function", pluginName, funcName)
 	}
 
 	var in []reflect.Value
@@ -63,7 +67,7 @@ func InvokeFunc(pluginName string, funcName string, args ...any) error {
 	return results[0].Interface().(error)
 }
 
-func ProcessSpecModel(pluginsList string, specModel *libopenapi.DocumentModel[v3high.Document]) error {
+func ProcessOAS3SpecModel(pluginsList string, specModel *libopenapi.DocumentModel[v3high.Document]) error {
 	if pluginsList == "" {
 		return nil
 	}
@@ -74,7 +78,25 @@ func ProcessSpecModel(pluginsList string, specModel *libopenapi.DocumentModel[v3
 		if pluginName == "" {
 			continue
 		}
-		if err = InvokeFunc(pluginName, "ProcessSpecModel", specModel); err != nil {
+		if err = InvokeFunc(pluginName, "ProcessOAS3SpecModel", specModel); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func ProcessOAS2SpecModel(pluginsList string, specModel *libopenapi.DocumentModel[v2high.Swagger]) error {
+	if pluginsList == "" {
+		return nil
+	}
+
+	var err error
+	pluginPackages := strings.Split(pluginsList, ",")
+	for _, pluginName := range pluginPackages {
+		if pluginName == "" {
+			continue
+		}
+		if err = InvokeFunc(pluginName, "ProcessOAS2SpecModel", specModel); err != nil {
 			return err
 		}
 	}
