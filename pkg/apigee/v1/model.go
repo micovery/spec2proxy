@@ -130,3 +130,15 @@ type APIProxy struct {
 	Resources       []*Resource
 	Extensions      map[string]*Extension
 }
+
+func NewStep(name string, condition string) *Step {
+	return &Step{
+		Step: struct {
+			Name      string `json:"Name" yaml:"Name"`
+			Condition string `json:"Condition" yaml:"Condition"`
+		}{
+			name,
+			condition,
+		},
+	}
+}

@@ -81,4 +81,23 @@ func (p *Policy) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
+func UnmarshalPolicy(data any, policy *Policy) error {
+	switch typedData := data.(type) {
+	case string:
+		var err error
+		if err = yaml.Unmarshal([]byte(typedData), policy); err != nil {
+			return errors.New(err)
+		}
+
+		return nil
+	default:
+		var err error
+		var policyYAML []byte
+		if policyYAML, err = yaml.Marshal(typedData); err != nil {
+			return errors.New(err)
+		}
+		return UnmarshalPolicy(string(policyYAML), policy)
+	}
+}
+
 var TypesMap map[string]reflect.Type

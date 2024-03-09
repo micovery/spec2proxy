@@ -122,30 +122,48 @@ func (p *Plugin) ProcessProxyModel(apiProxy *v1.APIProxy) error {
 	var err error
 
 	// handle policies
-	if err = UnmarshalExtension("x-Apigee-Policies", apiProxy.Extensions, &apiProxy.Policies); err != nil {
+	newPolicies := &[]*v1.Policy{}
+	if err = UnmarshalExtension("x-Apigee-Policies", apiProxy.Extensions, newPolicies); err != nil {
 		return err
 	}
+	apiProxy.Policies = append(apiProxy.Policies, *newPolicies...)
 
 	// handle PostFlow
-	if err = UnmarshalExtension("x-Apigee-PostFlow", apiProxy.Extensions, &apiProxy.ProxyEndpoints[0].PostFlow); err != nil {
+	newPostFlow := &v1.UnconditionalFlow{}
+	if err = UnmarshalExtension("x-Apigee-PostFlow", apiProxy.Extensions, newPostFlow); err != nil {
 		return err
 	}
+	apiProxy.ProxyEndpoints[0].PostFlow = mergeFlows(apiProxy.ProxyEndpoints[0].PostFlow, newPostFlow)
 
 	// handle PreFlow
-	if err = UnmarshalExtension("x-Apigee-PreFlow", apiProxy.Extensions, &apiProxy.ProxyEndpoints[0].PreFlow); err != nil {
+	newPreFlow := &v1.UnconditionalFlow{}
+	if err = UnmarshalExtension("x-Apigee-PreFlow", apiProxy.Extensions, newPreFlow); err != nil {
 		return err
 	}
+	apiProxy.ProxyEndpoints[0].PreFlow = mergeFlows(apiProxy.ProxyEndpoints[0].PreFlow, newPreFlow)
 
 	// handle conditional flows
 	for _, proxyEndpoint := range apiProxy.ProxyEndpoints {
 		for _, conditionalFlow := range proxyEndpoint.Flows {
-			if err = UnmarshalExtension("x-Apigee-Flow", conditionalFlow.Extensions, conditionalFlow); err != nil {
+			newFlow := &v1.ConditionalFlow{}
+			if err = UnmarshalExtension("x-Apigee-Flow", conditionalFlow.Extensions, newFlow); err != nil {
 				return err
 			}
+
+			conditionalFlow.Request = append((*conditionalFlow).Request, (*newFlow).Request...)
+			conditionalFlow.Response = append((*conditionalFlow).Response, (*newFlow).Response...)
 		}
 	}
 
 	return nil
+}
+
+func mergeFlows(flow1 *v1.UnconditionalFlow, flow2 *v1.UnconditionalFlow) *v1.UnconditionalFlow {
+	newFlow := v1.UnconditionalFlow{}
+
+	newFlow.Request = append((*flow1).Request, (*flow2).Request...)
+	newFlow.Response = append((*flow1).Response, (*flow2).Response...)
+	return &newFlow
 }
 
 func UnmarshalExtension(extensionName string, extensions map[string]*v1.Extension, target any) error {
